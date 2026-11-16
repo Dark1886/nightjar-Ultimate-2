@@ -804,6 +804,13 @@ impl Streaming {
                 else if cfg!(windows) { "Bilinear (not a hardware-decoded picture)".into() }
                 else { "Bilinear (AI enhancement needs Direct3D 11)".into() };
         }
+        #[cfg(target_os = "macos")]
+        if self.settings.upscaling == config::Upscaling::MetalFx {
+            if self.texture.is_hdr() { return "Bilinear (HDR)".into(); }
+            if self.upscale_failed { return "Bilinear (MetalFX unavailable)".into(); }
+            return if let Some(pass) = &self.metalfx { format!("MetalFX ({:.2} ms GPU)", pass.gpu_ms) }
+                else { "Bilinear (MetalFX inactive)".into() };
+        }
         if self.upscale_failed { "Bilinear (GPU unavailable)".into() }
         else if self.texture.is_hdr() { "Bilinear (HDR)".into() }
         else if self.upscaler.is_some() { self.settings.upscaling.label().into() }
@@ -911,6 +918,8 @@ impl Streaming {
             let dst = viewport(self.texture.size(), (w, h), self.settings.video_scaling, self.settings.align_video_top);
             let output = (dst.w as i32, dst.h as i32);
             let input = self.texture.size();
+            #[cfg(target_os = "macos")]
+            if self.settings.upscaling != config::Upscaling::MetalFx { self.metalfx = None; }
             let use_upscaler = self.settings.upscaling.is_shader() && !self.upscale_failed
                 && !self.texture.is_hdr() && output.0 >= input.0 && output.1 >= input.1 && output != input
                 && output.0 <= 16384 && output.1 <= 16384;
@@ -930,6 +939,32 @@ impl Streaming {
                     self.texture.copy_held();
                     self.upscaler = None;
                     if let Some(enhanced) = self.enhanced(renderer, output) { texture = enhanced; }
+                } else if self.settings.upscaling == config::Upscaling::MetalFx {
+                    self.upscaler = None;
+                    #[cfg(target_os = "macos")]
+                    {
+                        let source = self.texture.metalfx_source();
+                        let eligible = !self.upscale_failed && source.is_some()
+                            && self.texture.warp.is_identity()
+                            && output.0 >= input.0 && output.1 >= input.1 && output != input
+                            && output.0 <= 16384 && output.1 <= 16384;
+                        if eligible {
+                            if !self.metalfx.as_ref().is_some_and(|p| p.matches(input, output)) {
+                                self.metalfx = super::metalfx::Spatial::new(renderer, input, output);
+                                if self.metalfx.is_some() { eprintln!("nightjar: MetalFX upscaling {}x{} to {}x{}", input.0, input.1, output.0, output.1); }
+                            }
+                            let (buffer, info) = source.unwrap();
+                            match self.metalfx.as_mut().and_then(|p| p.draw(renderer, buffer, &info)) {
+                                Some(scaled) => texture = scaled,
+                                None => {
+                                    eprintln!("nightjar: MetalFX {} failed for {}x{} to {}x{}; bilinear for this stream", if self.metalfx.is_some() { "submission" } else { "creation" }, input.0, input.1, output.0, output.1);
+                                    self.metalfx = None;
+                                    self.upscale_failed = true;
+                                    self.show_toast(tr("GPU upscaling is unavailable; using bilinear scaling."));
+                                }
+                            }
+                        } else { self.metalfx = None; }
+                    }
                 } else if use_upscaler {
                     // The upscalers read the picture as SDL would draw it.
                     texture = self.texture.sdl_texture(renderer);

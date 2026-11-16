@@ -37,6 +37,14 @@ pub(crate) use present::macos_video_check::run as check_metal;
 
 mod shader;
 mod upscale;
+#[cfg(target_os = "macos")]
+mod metalfx;
+pub fn metalfx_supported() -> bool {
+    #[cfg(target_os = "macos")]
+    return metalfx::supported();
+    #[cfg(not(target_os = "macos"))]
+    false
+}
 pub mod frame_warp;
 pub mod enhance;
 #[cfg(windows)]
@@ -493,6 +501,8 @@ pub struct Streaming {
     pub pacer: Pacer,
     pub texture: VideoTexture,
     upscaler: Option<upscale::Upscaler>,
+    #[cfg(target_os = "macos")]
+    metalfx: Option<metalfx::Spatial>,
     /// AI enhancement (`config::Upscaling::Ai`) for the current picture shape and output size.
     #[cfg(windows)]
     enhancer: Option<enhance::Enhancer>,
@@ -1008,6 +1018,8 @@ impl Streaming {
                 .with_host_frame_times(settings.host_frame_times),
             texture: VideoTexture::new(connecting.settings.upscaling == config::Upscaling::Bilinear, hdr_stream),
             upscaler: None,
+            #[cfg(target_os = "macos")]
+            metalfx: None,
             #[cfg(windows)]
             enhancer: None,
             upscale_failed: false,
@@ -2297,6 +2309,8 @@ impl Streaming {
         unsafe { SDL_ShowCursor() };
         pads.reset();
         self.upscaler = None;
+        #[cfg(target_os = "macos")]
+        { self.metalfx = None; }
         #[cfg(windows)]
         { self.enhancer = None; }
         self.texture.destroy();
