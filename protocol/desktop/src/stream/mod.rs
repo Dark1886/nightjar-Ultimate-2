@@ -503,6 +503,9 @@ pub struct Streaming {
     upscaler: Option<upscale::Upscaler>,
     #[cfg(target_os = "macos")]
     metalfx: Option<metalfx::Spatial>,
+    /// Why MetalFX does not draw the current picture (`metalfx::blocker`), for the overlay.
+    #[cfg(target_os = "macos")]
+    metalfx_blocked: Option<&'static str>,
     /// AI enhancement (`config::Upscaling::Ai`) for the current picture shape and output size.
     #[cfg(windows)]
     enhancer: Option<enhance::Enhancer>,
@@ -1020,6 +1023,8 @@ impl Streaming {
             upscaler: None,
             #[cfg(target_os = "macos")]
             metalfx: None,
+            #[cfg(target_os = "macos")]
+            metalfx_blocked: None,
             #[cfg(windows)]
             enhancer: None,
             upscale_failed: false,

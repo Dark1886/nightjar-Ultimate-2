@@ -806,10 +806,11 @@ impl Streaming {
         }
         #[cfg(target_os = "macos")]
         if self.settings.upscaling == config::Upscaling::MetalFx {
-            if self.texture.is_hdr() { return "Bilinear (HDR)".into(); }
-            if self.upscale_failed { return "Bilinear (MetalFX unavailable)".into(); }
-            return if let Some(pass) = &self.metalfx { format!("MetalFX ({:.2} ms GPU)", pass.gpu_ms) }
-                else { "Bilinear (MetalFX inactive)".into() };
+            return match (&self.metalfx, self.metalfx_blocked) {
+                (Some(pass), None) => format!("MetalFX ({:.2} ms GPU)", pass.gpu_ms),
+                (_, Some(reason)) => format!("Bilinear ({reason})"),
+                (None, None) => "Bilinear (no picture yet)".into(),
+            };
         }
         if self.upscale_failed { "Bilinear (GPU unavailable)".into() }
         else if self.texture.is_hdr() { "Bilinear (HDR)".into() }
@@ -944,11 +945,19 @@ impl Streaming {
                     #[cfg(target_os = "macos")]
                     {
                         let source = self.texture.metalfx_source();
-                        let eligible = !self.upscale_failed && source.is_some()
-                            && self.texture.warp.is_identity()
-                            && output.0 >= input.0 && output.1 >= input.1 && output != input
-                            && output.0 <= 16384 && output.1 <= 16384;
-                        if eligible {
+                        // Decided by the stream's settings and picture, not by this present's Frame
+                        // Warp shift, so the pass is not dropped and rebuilt as the shift comes and goes.
+                        self.metalfx_blocked = super::metalfx::blocker(&super::metalfx::Conditions {
+                            failed: self.upscale_failed,
+                            hdr: self.texture.is_hdr(),
+                            frame_warp: self.frame_warp.is_some(),
+                            metal_renderer: !SDL_GetRenderMetalLayer(renderer).is_null(),
+                            hardware: source.is_some(),
+                            bt2020: source.as_ref().is_some_and(|(_, info)| matches!(info.color_space, 9 | 10)),
+                            input,
+                            output,
+                        });
+                        if self.metalfx_blocked.is_none() {
                             if !self.metalfx.as_ref().is_some_and(|p| p.matches(input, output)) {
                                 self.metalfx = super::metalfx::Spatial::new(renderer, input, output);
                                 if self.metalfx.is_some() { eprintln!("nightjar: MetalFX upscaling {}x{} to {}x{}", input.0, input.1, output.0, output.1); }

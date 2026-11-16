@@ -103,8 +103,9 @@ by SDL's native Metal renderer. It performs no CPU pixel readback. It currently 
 handing the result to SDL. The statistics line's GPU time includes conversion, scaling and
 the output copy; it is not total stream latency.
 
-HDR, software decoding, Frame Warp, formats requiring SDL's GPU renderer (such as PyroWave
-and packed chroma), and native-size or smaller outputs keep the existing presentation path.
+HDR, software decoding, BT.2020 SDR, Frame Warp, formats requiring SDL's GPU renderer (such as
+PyroWave and packed chroma), and native-size or smaller outputs keep the existing presentation
+path; the overlay's upscaling line names which.
 Creation/submission failures fall back to bilinear for the stream. Intel device support must
 be determined by the probe on the actual Mac; Apple Silicon support does not establish it.
 HDR MetalFX color processing and low-bitrate game-image quality remain to be evaluated.

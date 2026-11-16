@@ -23,9 +23,14 @@ its own. MetalFX does not flush SDL's renderer first: it reads only the decoded
 picture and writes only its own textures. The textures, ring and scaler are reused
 until dimensions change. Stream teardown releases the pass before the renderer.
 
-HDR, software-decoded pictures, Frame Warp, and formats that require SDL's GPU
-renderer retain existing presentation. Native-size and downscaled pictures do not
-run MetalFX. A failed scaler creation or submission falls back for that stream.
+HDR, software-decoded pictures, BT.2020 SDR pictures, streams with Frame Warp on, and
+formats that require SDL's GPU renderer retain existing presentation. Native-size and
+downscaled pictures do not run MetalFX. A failed scaler creation or submission falls back
+for that stream. `metalfx::blocker` decides this for each present from the stream's
+settings and the picture, never from Frame Warp's shift of the moment, and the overlay's
+upscaling line names the reason (`Bilinear (Frame Warp is on)`, `Bilinear (BT.2020 colour)`, …).
+SDL tags a BT.2020 picture as YCbCr BT.2020 and has no RGB space with those primaries, so
+MetalFX's RGB output could not be tagged to match it.
 MetalFX has no separate sharpness setting; the FSR/SGSR setting is unchanged.
 
 ## Local verification, 2026-11-16

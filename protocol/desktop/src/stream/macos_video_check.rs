@@ -213,6 +213,10 @@ fn benchmark_fixture(window: *mut SDL_Window) {
     let Some(path) = std::env::var_os("NIGHTJAR_METALFX_FIXTURE") else { return; };
     let bytes = std::fs::read(path).expect("read benchmark fixture");
     for mode in [crate::config::Upscaling::MetalFx, crate::config::Upscaling::Fsr1, crate::config::Upscaling::Sgsr1] {
+        if mode == crate::config::Upscaling::MetalFx && !super::super::metalfx::supported() {
+            println!("MetalFX unavailable on this device; benchmark skips it");
+            continue;
+        }
         unsafe {
             let renderer = crate::sdl::create_renderer_with(window, mode.is_shader(), false);
             assert!(!renderer.is_null());
