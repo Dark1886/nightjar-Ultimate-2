@@ -1,0 +1,102 @@
+//! Wire types of the Rubylight native API v1.
+//!
+//! The host serves them under [`PREFIX`] and Nightjar's `nightjar-core` reads
+//! them, so this crate depends on `serde` only. The contract is
+//! `docs/native-api.md`.
+//!
+//! Changes within v1 are additive: response types ignore unknown fields,
+//! enums decode values they don't know as `Unknown`, and request types reject
+//! unknown fields so typos fail loudly.
+pub mod audio;
+pub mod capabilities;
+pub mod coop;
+pub mod error;
+pub mod files;
+pub mod folders;
+pub mod guests;
+pub mod library;
+pub mod neural;
+pub mod pairing;
+pub mod power;
+pub mod radeon;
+pub mod session;
+pub mod usb;
+pub mod wake;
+
+/// The version this crate describes. It is also the `NativeApiVersion` value
+/// a paired client sees in `/serverinfo`.
+pub const API_VERSION: u32 = 1;
+/// Path prefix of every endpoint.
+pub const PREFIX: &str = "/api/native/v1";
+/// The `/serverinfo` XML element that announces the API.
+pub const SERVERINFO_FIELD: &str = "NativeApiVersion";
+
+/// Feature strings in `Capabilities::features`. Clients ignore unknown ones.
+pub mod feature {
+    pub const LIBRARY: &str = "library";
+    pub const SESSION: &str = "session";
+    pub const CLOSE_GAME: &str = "session.close_game";
+    pub const RADEON_READ: &str = "radeon.read";
+    pub const RADEON_WRITE: &str = "radeon.write";
+    /// `Session::launcher` is filled in.
+    pub const SESSION_LAUNCHER: &str = "session.launcher";
+    /// `Session::radeon_profile` is filled in, and apps carry a Radeon profile.
+    pub const RADEON_PROFILE: &str = "radeon.profile";
+    /// [`crate::neural`]: `GET /neural` and `POST /neural/settings` turn a
+    /// game's frame generation on and off.
+    pub const NEURAL_FRAME_GENERATION: &str = "neural.frame_generation";
+    /// `POST /session/couch-menu` opens and closes the menu the host draws into
+    /// the stream (since 1.1.0).
+    pub const COUCH_MENU: &str = "session.couch_menu";
+    /// `POST /session/continue-here` moves the running game's stream to the caller, and the
+    /// session carries `playing_on` and `moved_to`.
+    pub const CONTINUE_HERE: &str = "session.continue_here";
+    /// `GET /wake` lists the PC's wake targets.
+    pub const WAKE: &str = "wake";
+    /// `GET /audio` and its writes carry `audio.night_mode`, and launches take
+    /// `audioNightMode`.
+    pub const AUDIO_NIGHT_MODE: &str = "audio.night_mode";
+    /// `GET /audio` and its writes carry `audio.headphone_surround`, and
+    /// launches take `audioHeadphoneSurround`.
+    pub const AUDIO_HEADPHONE_SURROUND: &str = "audio.headphone_surround";
+    /// Launches take `input_only=1&rlMicOnly=1`: a session that only plays
+    /// the device's microphone on the host, without picture, sound or input.
+    /// It needs the launch permission, but not the host's input-only mode.
+    pub const MIC_ONLY: &str = "session.mic_only";
+    /// `POST /files` answers: the host's File transfer setting is on.
+    pub const FILES_UPLOAD: &str = "files.upload";
+    /// `GET /files` and `GET /files/content` answer, as above.
+    pub const FILES_DOWNLOAD: &str = "files.download";
+    /// USB forwarding: the `0x553A` control channel and [`crate::usb::TUNNEL_PATH`]
+    /// answer, while the host's `usb_forwarding` setting is on and its USB/IP
+    /// driver is ready.
+    pub const USB: &str = "usb";
+    /// `GET` and `POST /actions/clipboard?type=png` carry images, while the host's
+    /// `clipboard_image` setting is on.
+    pub const CLIPBOARD_IMAGE: &str = "clipboard.image";
+    /// The [`crate::folders`] routes browse and transfer the device's shared
+    /// folders, while the host shares at least one.
+    pub const FOLDERS: &str = "folders";
+    /// `/folders/{id}/dav/` mounts a shared folder over WebDAV (class 1).
+    /// Defined for 3.0; not yet served.
+    pub const FOLDERS_MOUNT: &str = "folders.mount";
+    /// [`crate::coop`]: `GET /coop` and `POST /coop/join` answer, while the
+    /// host can run Nucleus Co-op sessions.
+    pub const COOP: &str = "coop";
+    /// [`crate::power`]: `GET /power` and `POST /power/restart` answer.
+    pub const POWER_RESTART: &str = "power.restart";
+    /// `GET /power` and `POST /power/shutdown` answer.
+    pub const POWER_SHUTDOWN: &str = "power.shutdown";
+    /// `GET /update` and `POST /update/install` answer: the host installs
+    /// its own updates.
+    pub const UPDATE: &str = "update";
+    /// [`crate::pairing`]: a device with Host control lists, approves and
+    /// denies pairing requests, while the host's pairing setting is on.
+    pub const PAIRING_APPROVE: &str = "pairing.approve";
+    /// [`crate::guests`]: `GET /session/guests` and its actions answer, while the host's
+    /// `guest_join` lets another device join the running game as a guest.
+    pub const SESSION_GUESTS: &str = "session.guests";
+    /// [`crate::guests::InviteCreate`]: `GET /session/guests/invites` and its actions answer,
+    /// while pairing new devices is on: invites to play over the internet.
+    pub const GUEST_INVITES: &str = "session.guest-invites";
+}
