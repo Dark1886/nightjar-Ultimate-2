@@ -51,6 +51,17 @@ fn remap_handles_all_device_quirks() {
     let r = remap_key_event(false, keycode::UNKNOWN, 306, 0, true, 0x2dc8, 0, 34, 0);
     assert_eq!(r.key_code, keycode::BUTTON_MODE);
 
+    // 8BitDo Ultimate 2 Wireless: the paddles keep C and Z, L4 and R4 become Button 13 and 14
+    let r = remap_key_event(false, keycode::BUTTON_C, 306, 0, true, 0x2dc8, 0x6012, 30, 0);
+    assert_eq!(r.key_code, keycode::BUTTON_C);
+    let r = remap_key_event(false, keycode::BUTTON_Z, 309, 0, true, 0x2dc8, 0x6012, 30, 0);
+    assert_eq!(r.key_code, keycode::BUTTON_Z);
+    let r = remap_key_event(false, keycode::UNKNOWN, 0x2c0, 0, true, 0x2dc8, 0x6012, 30, 0);
+    assert_eq!(r.key_code, keycode::BUTTON_13);
+    let r = remap_key_event(false, keycode::UNKNOWN, 0x2c1, 0, true, 0x2dc8, 0x6012, 30, 0);
+    assert_eq!(r.key_code, keycode::BUTTON_13 + 1);
+    assert!(is_remappable_source(keycode::BUTTON_13) && is_remappable_source(keycode::BUTTON_13 + 1));
+
     let r = remap_key_event(
         false,
         keycode::UNKNOWN,

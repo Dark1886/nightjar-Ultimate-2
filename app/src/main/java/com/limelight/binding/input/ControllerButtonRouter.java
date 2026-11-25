@@ -129,8 +129,10 @@ final class ControllerButtonRouter {
             }
         }
 
-        // A user mapping is keyed by the physical key code and replaces face-button flipping
-        int userTarget = context.buttonMap.map(event.getKeyCode());
+        // A user mapping is keyed by the physical key code (or, for a key without one, the code the
+        // quirk rules gave it) and replaces face-button flipping
+        int userTarget = context.buttonMap.map(
+                event.getKeyCode() != KeyEvent.KEYCODE_UNKNOWN ? event.getKeyCode() : keyCode);
         if (userTarget == ControllerButtonMap.DISABLED) {
             return true;
         }
@@ -263,8 +265,10 @@ final class ControllerButtonRouter {
             sendHeldGuide(context);
         }
 
-        // A user mapping is keyed by the physical key code and replaces face-button flipping
-        int userTarget = context.buttonMap.map(event.getKeyCode());
+        // A user mapping is keyed by the physical key code (or, for a key without one, the code the
+        // quirk rules gave it) and replaces face-button flipping
+        int userTarget = context.buttonMap.map(
+                event.getKeyCode() != KeyEvent.KEYCODE_UNKNOWN ? event.getKeyCode() : keyCode);
         if (userTarget == ControllerButtonMap.DISABLED) {
             return true;
         }

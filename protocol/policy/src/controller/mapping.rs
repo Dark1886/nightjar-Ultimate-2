@@ -39,6 +39,7 @@ pub mod keycode {
     pub const BUTTON_MODE: i32 = 110;
     pub const MEDIA_RECORD: i32 = 130;
     pub const BUTTON_1: i32 = 188;
+    pub const BUTTON_13: i32 = 200;
     pub const BUTTON_16: i32 = 203;
     pub const DPAD_UP_LEFT: i32 = 268;
     pub const DPAD_DOWN_LEFT: i32 = 269;
@@ -274,7 +275,15 @@ pub fn remap_key_event(
         out.key_code = keycode::BUTTON_1;
         return out;
     }
-    if vendor_id == 0x2dc8 && scan_code == 306 {
+    // The 8BitDo Ultimate 2 Wireless (2dc8:6012) has a real Home button: its scan 306 (BUTTON_C)
+    // is the right back paddle, not Guide. Its L4 and R4 send BTN_TRIGGER_HAPPY1 and 2 (0x2c0,
+    // 0x2c1) with no key code, so they become Button 13 and 14 and each extra button can be mapped.
+    if vendor_id == 0x2dc8 && product_id == 0x6012 {
+        if key_code == keycode::UNKNOWN && matches!(scan_code, 0x2c0 | 0x2c1) {
+            out.key_code = keycode::BUTTON_13 + (scan_code - 0x2c0);
+            return out;
+        }
+    } else if vendor_id == 0x2dc8 && scan_code == 306 {
         out.key_code = keycode::BUTTON_MODE;
         return out;
     }

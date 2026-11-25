@@ -6,6 +6,7 @@ import com.google.android.material.button.MaterialButton;
 import androidx.appcompat.app.AlertDialog;
 import com.limelight.ui.NavigationDialogBuilder;
 import android.content.res.TypedArray;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -17,6 +18,7 @@ import android.widget.TextView;
 import com.limelight.R;
 import com.limelight.binding.input.ControllerButtonMap;
 import com.limelight.binding.input.ControllerAxisMap;
+import com.limelight.nvstream.jni.NightjarInputJni;
 import com.limelight.ui.TopAppBar;
 import com.limelight.utils.UiHelper;
 
@@ -295,13 +297,21 @@ public class ControllerMappingActivity extends NightjarActivity {
             }
             return true;
         }
-        if (!capturing || !isControllerEvent(event) || !ControllerButtonMap.isRemappableSource(event.getKeyCode())) {
+        // A key without a key code of its own (the 8BitDo Ultimate 2's L4 and R4) is captured by the
+        // code the stream's quirk rules give it
+        InputDevice device = event.getDevice();
+        int source = event.getKeyCode();
+        if (source == KeyEvent.KEYCODE_UNKNOWN && device != null) {
+            source = NightjarInputJni.remapKeyEvent(false, source, event.getScanCode(), event.getFlags(),
+                    event.hasNoModifiers(), device.getVendorId(), device.getProductId(),
+                    Build.VERSION.SDK_INT, 0, new int[1]);
+        }
+        if (!capturing || !isControllerEvent(event) || !ControllerButtonMap.isRemappableSource(source)) {
             return super.dispatchKeyEvent(event);
         }
         // Act on release so the press cannot leak into the dialog that opens next
         if (event.getAction() == KeyEvent.ACTION_UP) {
             capturing = false;
-            InputDevice device = event.getDevice();
             if (device != null) {
                 select(device.getVendorId(), device.getProductId(), device.getName());
             }
@@ -309,7 +319,7 @@ public class ControllerMappingActivity extends NightjarActivity {
                 select(0, 0, null);
             }
             refresh();
-            chooseTarget(event.getKeyCode());
+            chooseTarget(source);
         }
         return true;
     }
