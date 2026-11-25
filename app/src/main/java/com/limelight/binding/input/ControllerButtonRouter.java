@@ -27,6 +27,15 @@ final class ControllerButtonRouter {
 
     // Return a valid keycode, -2 to consume, or -1 to not consume the event
     // Device MAY BE NULL
+    /**
+     * A user mapping is keyed by the physical key code or, for a key without one (the 8BitDo
+     * Ultimate 2's L4 and R4), by the code the quirk rules gave it.
+     */
+    private static int userTarget(ControllerHandler.InputDeviceContext context, KeyEvent event, int remappedKeyCode) {
+        int keyCode = event.getKeyCode();
+        return context.buttonMap.map(keyCode != KeyEvent.KEYCODE_UNKNOWN ? keyCode : remappedKeyCode);
+    }
+
     private int handleRemapping(ControllerHandler.InputDeviceContext context, KeyEvent event) {
         int quirks = 0;
         if (context.ignoreBack) quirks |= NightjarInputJni.QUIRK_IGNORE_BACK;
@@ -129,10 +138,8 @@ final class ControllerButtonRouter {
             }
         }
 
-        // A user mapping is keyed by the physical key code (or, for a key without one, the code the
-        // quirk rules gave it) and replaces face-button flipping
-        int userTarget = context.buttonMap.map(
-                event.getKeyCode() != KeyEvent.KEYCODE_UNKNOWN ? event.getKeyCode() : keyCode);
+        // A user mapping replaces face-button flipping
+        int userTarget = userTarget(context, event, keyCode);
         if (userTarget == ControllerButtonMap.DISABLED) {
             return true;
         }
@@ -265,10 +272,8 @@ final class ControllerButtonRouter {
             sendHeldGuide(context);
         }
 
-        // A user mapping is keyed by the physical key code (or, for a key without one, the code the
-        // quirk rules gave it) and replaces face-button flipping
-        int userTarget = context.buttonMap.map(
-                event.getKeyCode() != KeyEvent.KEYCODE_UNKNOWN ? event.getKeyCode() : keyCode);
+        // A user mapping replaces face-button flipping
+        int userTarget = userTarget(context, event, keyCode);
         if (userTarget == ControllerButtonMap.DISABLED) {
             return true;
         }

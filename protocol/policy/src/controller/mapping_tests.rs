@@ -59,8 +59,8 @@ fn remap_handles_all_device_quirks() {
     let r = remap_key_event(false, keycode::UNKNOWN, 0x2c0, 0, true, 0x2dc8, 0x6012, 30, 0);
     assert_eq!(r.key_code, keycode::BUTTON_13);
     let r = remap_key_event(false, keycode::UNKNOWN, 0x2c1, 0, true, 0x2dc8, 0x6012, 30, 0);
-    assert_eq!(r.key_code, keycode::BUTTON_13 + 1);
-    assert!(is_remappable_source(keycode::BUTTON_13) && is_remappable_source(keycode::BUTTON_13 + 1));
+    assert_eq!(r.key_code, keycode::BUTTON_14);
+    assert!(is_remappable_source(keycode::BUTTON_13) && is_remappable_source(keycode::BUTTON_14));
 
     let r = remap_key_event(
         false,

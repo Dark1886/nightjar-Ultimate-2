@@ -297,6 +297,9 @@ public class ControllerMappingActivity extends NightjarActivity {
             }
             return true;
         }
+        if (!capturing || !isControllerEvent(event)) {
+            return super.dispatchKeyEvent(event);
+        }
         // A key without a key code of its own (the 8BitDo Ultimate 2's L4 and R4) is captured by the
         // code the stream's quirk rules give it
         InputDevice device = event.getDevice();
@@ -306,7 +309,7 @@ public class ControllerMappingActivity extends NightjarActivity {
                     event.hasNoModifiers(), device.getVendorId(), device.getProductId(),
                     Build.VERSION.SDK_INT, 0, new int[1]);
         }
-        if (!capturing || !isControllerEvent(event) || !ControllerButtonMap.isRemappableSource(source)) {
+        if (!ControllerButtonMap.isRemappableSource(source)) {
             return super.dispatchKeyEvent(event);
         }
         // Act on release so the press cannot leak into the dialog that opens next
